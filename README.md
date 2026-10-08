@@ -1,9 +1,12 @@
 # hyprtoggle
 
-A native C++ plugin for **Hyprland** that introduces edge-snapping actions when dragging windows:
-- **Drag to top edge**: Automatically makes the dragged window **fullscreen** (or maximized).
-- **Drag down from fullscreen**: Hyprland natively un-fullscreens and restores the original floating dimensions under the cursor.
-- **Modular edge architecture**: Designed cleanly to support additional edge triggers (such as dragging to the bottom edge to toggle floating window mode).
+A native C++ plugin for **Hyprland** that introduces edge-snapping and corner-snapping actions when dragging windows, complete with an **animated visual snap preview overlay**:
+
+- **Top Edge**: Snaps the window to **fullscreen** (or maximized).
+- **Bottom Edge**: Toggles the window between **tiled** and **floating**.
+- **Left & Right Edges**: Snaps the window to the **left or right half (50%)** of the screen.
+- **Four Corners (`Top-Left`, `Top-Right`, `Bottom-Left`, `Bottom-Right`)**: Snaps the window into **quarter quadrants (25%)**.
+- **Live Visual Preview**: Shows a sleek, translucent accent preview box with rounded corners and outline while hovering over any snap zone.
 
 ---
 
@@ -56,9 +59,13 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.config({
     plugin = {
         hyprtoggle = {
-            enabled   = true,  -- Enable or disable the plugin (default: true)
-            mode      = 2,     -- 2 = Real Fullscreen (default), 1 = Maximized (keeps bars/gaps)
-            threshold = 25,    -- Distance in pixels from screen edge to trigger (default: 25)
+            enabled             = true,  -- Enable or disable the plugin (default: true)
+            mode                = 2,     -- 2 = Real Fullscreen (default), 1 = Maximized (keeps bars/gaps)
+            threshold           = 20,    -- Edge activation distance in pixels (default: 20)
+            corner_threshold    = 60,    -- Corner activation distance in pixels (default: 60)
+            preview             = true,  -- Enable visual snap preview overlay (default: true)
+            preview_rounding    = 10,    -- Corner radius of preview overlay (default: 10)
+            preview_border_size = 2,     -- Outline thickness of preview overlay (default: 2)
         },
     },
 })
@@ -77,26 +84,13 @@ plugin {
     hyprtoggle {
         enabled = 1
         mode = 2
-        threshold = 25
+        threshold = 20
+        corner_threshold = 60
+        preview = 1
+        preview_rounding = 10
+        preview_border_size = 2
     }
 }
-```
-
----
-
-## Manual Build (Without `hyprpm`)
-
-To build the plugin shared object manually:
-
-```bash
-make host
-```
-The compiled plugin will be available at `./hyprtoggle.so`.
-
-You can test-load it dynamically using `hyprctl`:
-```bash
-hyprctl plugin load $(pwd)/hyprtoggle.so
-hyprctl plugin unload $(pwd)/hyprtoggle.so
 ```
 
 ---
@@ -106,8 +100,27 @@ hyprctl plugin unload $(pwd)/hyprtoggle.so
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `plugin:hyprtoggle:enabled` | `int` / `bool` | `1` (`true`) | Enable or disable plugin functionality. |
-| `plugin:hyprtoggle:mode` | `int` | `2` | `1`: Maximized (respects bars/gaps), `2`: Real fullscreen. |
-| `plugin:hyprtoggle:threshold` | `int` | `25` | Activation distance in pixels from the monitor's top boundary. |
+| `plugin:hyprtoggle:mode` | `int` | `2` | Top edge mode: `1`: Maximized (respects bars/gaps), `2`: Real fullscreen. |
+| `plugin:hyprtoggle:threshold` | `int` | `20` | Distance in pixels from screen borders to trigger edge snapping. |
+| `plugin:hyprtoggle:corner_threshold` | `int` | `60` | Distance in pixels from screen corners to trigger corner quadrant snapping. |
+| `plugin:hyprtoggle:preview` | `int` / `bool` | `1` (`true`) | Enable or disable the translucent visual preview overlay. |
+| `plugin:hyprtoggle:preview_rounding` | `int` | `10` | Corner radius for the preview rectangle. |
+| `plugin:hyprtoggle:preview_border_size` | `int` | `2` | Border stroke width for the preview rectangle. |
+
+---
+
+## Snap Zones Reference
+
+| Zone | Trigger Region | Action Result |
+| :--- | :--- | :--- |
+| **`TOP`** | Top border (center) | Toggles Fullscreen / Maximized |
+| **`BOTTOM`** | Bottom border (center) | Toggles Floating / Tiled |
+| **`LEFT`** | Left border (center) | Snaps to Left Half (50% width) |
+| **`RIGHT`** | Right border (center) | Snaps to Right Half (50% width) |
+| **`TOP_LEFT`** | Top-left corner | Snaps to Top-Left Quadrant (25% area) |
+| **`TOP_RIGHT`** | Top-right corner | Snaps to Top-Right Quadrant (25% area) |
+| **`BOTTOM_LEFT`** | Bottom-left corner | Snaps to Bottom-Left Quadrant (25% area) |
+| **`BOTTOM_RIGHT`**| Bottom-right corner | Snaps to Bottom-Right Quadrant (25% area) |
 
 ---
 

@@ -7,7 +7,7 @@ endif
 CXXFLAGS ?= -O2
 CXXFLAGS += -shared -fPIC -std=c++26
 
-SRC = src/main.cpp src/edge_action.cpp
+SRC = src/main.cpp src/edge_action.cpp src/preview_overlay.cpp
 
 PKG_INCLUDES = $(shell pkg-config --cflags pixman-1 libdrm hyprland pangocairo libinput libudev wayland-server xkbcommon 2>/dev/null)
 
