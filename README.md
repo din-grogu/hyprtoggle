@@ -51,26 +51,30 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 
 -- Plugin Configuration
-hl.config.plugin.hyprtoggle = {
-    enabled             = 1,
-    threshold           = 20,    -- Distance in px from edge to trigger (default: 20)
-    corner_threshold    = 60,    -- Corner zone size in px (default: 60)
+hl.config({
+    plugin = {
+        hyprtoggle = {
+            enabled             = 1,
+            threshold           = 20,    -- Distance in px from edge to trigger (default: 20)
+            corner_threshold    = 60,    -- Corner zone size in px (default: 60)
 
-    -- 8 Screen Zone Actions:
-    action_top          = "fullscreen",       -- Options: "fullscreen", "maximize", "toggle_float", or any dispatcher
-    action_bottom       = "toggle_float",     -- Options: "toggle_float", "closewindow", etc.
-    action_left         = "snap_left",        -- Options: "snap_left", "closewindow", "killactive"
-    action_right        = "snap_right",       -- Options: "snap_right"
-    action_top_left     = "snap_top_left",    -- Options: "snap_top_left"
-    action_top_right    = "snap_top_right",   -- Options: "snap_top_right"
-    action_bottom_left  = "snap_bottom_left", -- Options: "snap_bottom_left"
-    action_bottom_right = "snap_bottom_right",-- Options: "snap_bottom_right"
+            -- 8 Screen Zone Actions:
+            action_top          = "fullscreen",       -- Options: "fullscreen", "maximize", "toggle_float", or any dispatcher
+            action_bottom       = "toggle_float",     -- Options: "toggle_float", "closewindow", etc.
+            action_left         = "snap_left",        -- Options: "snap_left", "closewindow", "killactive"
+            action_right        = "snap_right",       -- Options: "snap_right"
+            action_top_left     = "snap_top_left",    -- Options: "snap_top_left"
+            action_top_right    = "snap_top_right",   -- Options: "snap_top_right"
+            action_bottom_left  = "snap_bottom_left", -- Options: "snap_bottom_left"
+            action_bottom_right = "snap_bottom_right",-- Options: "snap_bottom_right"
 
-    -- Visual Preview Overlay
-    preview             = 1,     -- 1 = enabled, 0 = disabled
-    preview_rounding    = 10,    -- Corner rounding radius
-    preview_border_size = 2,     -- Outline thickness
-}
+            -- Visual Preview Overlay
+            preview             = 1,     -- 1 = enabled, 0 = disabled
+            preview_rounding    = 10,    -- Corner rounding radius
+            preview_border_size = 2,     -- Outline thickness
+        },
+    },
+})
 ```
 
 ### Traditional `.conf` Configuration (`hyprland.conf`)
