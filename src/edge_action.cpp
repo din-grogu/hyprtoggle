@@ -13,6 +13,9 @@
 #endif
 #include <hyprland/src/layout/LayoutManager.hpp>
 
+#include <algorithm>
+#include <cctype>
+
 static bool isWindowFloating(PHLWINDOW window) {
 #if __has_include(<hyprland/src/desktop/view/Window.hpp>)
     return window->m_isFloating;
@@ -21,7 +24,7 @@ static bool isWindowFloating(PHLWINDOW window) {
 #endif
 }
 
-eScreenEdge detectScreenEdge(const Hyprutils::Math::Vector2D& mouseCoords, double edgeThreshold, double cornerThreshold) {
+eScreenEdge detectScreenEdge(const Vector2D& mouseCoords, double edgeThreshold, double cornerThreshold) {
     const auto pMonitor = State::monitorState()->query().vec(mouseCoords).run();
     if (!pMonitor)
         return eScreenEdge::NONE;
@@ -92,7 +95,30 @@ eScreenEdge detectScreenEdge(const Hyprutils::Math::Vector2D& mouseCoords, doubl
     return eScreenEdge::NONE;
 }
 
-CBox getTargetBoxForEdge(eScreenEdge edge, PHLMONITOR pMonitor) {
+std::string getActionForEdge(eScreenEdge edge) {
+    switch (edge) {
+        case eScreenEdge::TOP:
+            return g_config.action_top ? g_config.action_top->value() : "fullscreen";
+        case eScreenEdge::BOTTOM:
+            return g_config.action_bottom ? g_config.action_bottom->value() : "toggle_float";
+        case eScreenEdge::LEFT:
+            return g_config.action_left ? g_config.action_left->value() : "snap_left";
+        case eScreenEdge::RIGHT:
+            return g_config.action_right ? g_config.action_right->value() : "snap_right";
+        case eScreenEdge::TOP_LEFT:
+            return g_config.action_top_left ? g_config.action_top_left->value() : "snap_top_left";
+        case eScreenEdge::TOP_RIGHT:
+            return g_config.action_top_right ? g_config.action_top_right->value() : "snap_top_right";
+        case eScreenEdge::BOTTOM_LEFT:
+            return g_config.action_bottom_left ? g_config.action_bottom_left->value() : "snap_bottom_left";
+        case eScreenEdge::BOTTOM_RIGHT:
+            return g_config.action_bottom_right ? g_config.action_bottom_right->value() : "snap_bottom_right";
+        default:
+            return "none";
+    }
+}
+
+CBox getTargetBoxForAction(const std::string& action, eScreenEdge edge, PHLMONITOR pMonitor) {
     if (!pMonitor)
         return {};
 
@@ -100,58 +126,64 @@ CBox getTargetBoxForEdge(eScreenEdge edge, PHLMONITOR pMonitor) {
     const double halfW  = workArea.width / 2.0;
     const double halfH  = workArea.height / 2.0;
 
+    std::string act = action;
+    std::ranges::transform(act, act.begin(), [](unsigned char c) { return std::tolower(c); });
+
+    if (act == "fullscreen" || act == "toggle_fullscreen" || act == "togglefullscreen" || act == "maximize" || act == "maximized") {
+        return workArea;
+    }
+    if (act == "toggle_float" || act == "togglefloating" || act == "float") {
+        const double floatW = workArea.width * 0.7;
+        const double floatH = workArea.height * 0.7;
+        return CBox{workArea.x + (workArea.width - floatW) / 2.0, workArea.y + (workArea.height - floatH) / 2.0, floatW, floatH};
+    }
+    if (act == "snap_left" || act == "left") {
+        return CBox{workArea.x, workArea.y, halfW, workArea.height};
+    }
+    if (act == "snap_right" || act == "right") {
+        return CBox{workArea.x + halfW, workArea.y, halfW, workArea.height};
+    }
+    if (act == "snap_top_left" || act == "top_left" || act == "top-left") {
+        return CBox{workArea.x, workArea.y, halfW, halfH};
+    }
+    if (act == "snap_top_right" || act == "top_right" || act == "top-right") {
+        return CBox{workArea.x + halfW, workArea.y, halfW, halfH};
+    }
+    if (act == "snap_bottom_left" || act == "bottom_left" || act == "bottom-left") {
+        return CBox{workArea.x, workArea.y + halfH, halfW, halfH};
+    }
+    if (act == "snap_bottom_right" || act == "bottom_right" || act == "bottom-right") {
+        return CBox{workArea.x + halfW, workArea.y + halfH, halfW, halfH};
+    }
+    if (act == "none" || act.empty()) {
+        return {};
+    }
+
+    // Indicador visual de destaque caso seja um dispatcher ou comando arbitrário
+    const double barThick = 12.0;
     switch (edge) {
         case eScreenEdge::TOP:
-            return workArea;
-        case eScreenEdge::BOTTOM: {
-            const double floatW = workArea.width * 0.7;
-            const double floatH = workArea.height * 0.7;
-            return CBox{workArea.x + (workArea.width - floatW) / 2.0, workArea.y + (workArea.height - floatH) / 2.0, floatW, floatH};
-        }
+            return CBox{workArea.x, workArea.y, workArea.width, barThick};
+        case eScreenEdge::BOTTOM:
+            return CBox{workArea.x, workArea.y + workArea.height - barThick, workArea.width, barThick};
         case eScreenEdge::LEFT:
-            return CBox{workArea.x, workArea.y, halfW, workArea.height};
+            return CBox{workArea.x, workArea.y, barThick, workArea.height};
         case eScreenEdge::RIGHT:
-            return CBox{workArea.x + halfW, workArea.y, halfW, workArea.height};
+            return CBox{workArea.x + workArea.width - barThick, workArea.y, barThick, workArea.height};
         case eScreenEdge::TOP_LEFT:
-            return CBox{workArea.x, workArea.y, halfW, halfH};
+            return CBox{workArea.x, workArea.y, 60.0, 60.0};
         case eScreenEdge::TOP_RIGHT:
-            return CBox{workArea.x + halfW, workArea.y, halfW, halfH};
+            return CBox{workArea.x + workArea.width - 60.0, workArea.y, 60.0, 60.0};
         case eScreenEdge::BOTTOM_LEFT:
-            return CBox{workArea.x, workArea.y + halfH, halfW, halfH};
+            return CBox{workArea.x, workArea.y + workArea.height - 60.0, 60.0, 60.0};
         case eScreenEdge::BOTTOM_RIGHT:
-            return CBox{workArea.x + halfW, workArea.y + halfH, halfW, halfH};
+            return CBox{workArea.x + workArea.width - 60.0, workArea.y + workArea.height - 60.0, 60.0, 60.0};
         default:
             return {};
     }
 }
 
-void handleTopEdgeAction(PHLWINDOW window) {
-    if (!Desktop::View::validMapped(window))
-        return;
-
-    const auto targetMode = g_config.mode ? (g_config.mode->value() == 1 ? Fullscreen::FSMODE_MAXIMIZED : Fullscreen::FSMODE_FULLSCREEN) : Fullscreen::FSMODE_FULLSCREEN;
-
-    g_pEventLoopManager->doLater([window, targetMode]() {
-        if (!Desktop::View::validMapped(window))
-            return;
-        Fullscreen::controller()->setFullscreenMode(window, targetMode);
-        g_pHyprRenderer->damageWindow(window);
-    });
-}
-
-void handleBottomEdgeAction(PHLWINDOW window) {
-    if (!Desktop::View::validMapped(window))
-        return;
-
-    g_pEventLoopManager->doLater([window]() {
-        if (!Desktop::View::validMapped(window))
-            return;
-        g_layoutManager->changeFloatingMode(window->layoutTarget());
-        g_pHyprRenderer->damageWindow(window);
-    });
-}
-
-void handleSnapBoxAction(PHLWINDOW window, PHLMONITOR pMonitor, const CBox& targetBox) {
+static void applySnapBox(PHLWINDOW window, const CBox& targetBox) {
     if (!Desktop::View::validMapped(window))
         return;
 
@@ -159,12 +191,10 @@ void handleSnapBoxAction(PHLWINDOW window, PHLMONITOR pMonitor, const CBox& targ
         if (!Desktop::View::validMapped(window))
             return;
 
-        // Se a janela estiver em tela cheia, remove tela cheia primeiro
         if (Fullscreen::controller()->isFullscreen(window)) {
             Fullscreen::controller()->setFullscreenMode(window, Fullscreen::FSMODE_NONE);
         }
 
-        // Se for tiled, transforma em floating
         if (!isWindowFloating(window)) {
             g_layoutManager->changeFloatingMode(window->layoutTarget());
         }
@@ -175,7 +205,76 @@ void handleSnapBoxAction(PHLWINDOW window, PHLMONITOR pMonitor, const CBox& targ
     });
 }
 
-bool dispatchEdgeDropAction(PHLWINDOW window, const Hyprutils::Math::Vector2D& mouseCoords) {
+bool executeAction(const std::string& action, PHLWINDOW window, PHLMONITOR pMonitor, const CBox& targetBox) {
+    if (action.empty() || action == "none")
+        return true;
+
+    std::string actLower = action;
+    std::ranges::transform(actLower, actLower.begin(), [](unsigned char c) { return std::tolower(c); });
+
+    // 1. Fullscreen / maximize
+    if (actLower == "fullscreen" || actLower == "toggle_fullscreen" || actLower == "togglefullscreen") {
+        g_pEventLoopManager->doLater([window]() {
+            if (!Desktop::View::validMapped(window))
+                return;
+            Fullscreen::controller()->setFullscreenMode(window, Fullscreen::FSMODE_FULLSCREEN);
+            g_pHyprRenderer->damageWindow(window);
+        });
+        return true;
+    }
+
+    if (actLower == "maximize" || actLower == "maximized") {
+        g_pEventLoopManager->doLater([window]() {
+            if (!Desktop::View::validMapped(window))
+                return;
+            Fullscreen::controller()->setFullscreenMode(window, Fullscreen::FSMODE_MAXIMIZED);
+            g_pHyprRenderer->damageWindow(window);
+        });
+        return true;
+    }
+
+    // 2. Toggle Float
+    if (actLower == "toggle_float" || actLower == "togglefloating" || actLower == "float") {
+        g_pEventLoopManager->doLater([window]() {
+            if (!Desktop::View::validMapped(window))
+                return;
+            g_layoutManager->changeFloatingMode(window->layoutTarget());
+            g_pHyprRenderer->damageWindow(window);
+        });
+        return true;
+    }
+
+    // 3. Geometric Snapping
+    if (actLower.starts_with("snap_") || actLower == "left" || actLower == "right" ||
+        actLower == "top_left" || actLower == "top_right" || actLower == "bottom_left" || actLower == "bottom_right") {
+        applySnapBox(window, targetBox);
+        return true;
+    }
+
+    // 4. Fechar Janela
+    if (actLower == "closewindow" || actLower == "close_window" || actLower == "killactive") {
+        g_pEventLoopManager->doLater([window]() {
+            if (!Desktop::View::validMapped(window))
+                return;
+            HyprlandAPI::invokeHyprctlCommand("dispatch", "closewindow");
+        });
+        return true;
+    }
+
+    // 5. Dispatcher arbitrário do Hyprland ou comando exec
+    std::string dispatchCmd = action;
+    if (dispatchCmd.starts_with("dispatch ")) {
+        dispatchCmd = dispatchCmd.substr(9);
+    }
+
+    g_pEventLoopManager->doLater([dispatchCmd]() {
+        HyprlandAPI::invokeHyprctlCommand("dispatch", dispatchCmd);
+    });
+
+    return true;
+}
+
+bool dispatchEdgeDropAction(PHLWINDOW window, const Vector2D& mouseCoords) {
     if (!window || !isPluginEnabled())
         return false;
 
@@ -190,24 +289,8 @@ bool dispatchEdgeDropAction(PHLWINDOW window, const Hyprutils::Math::Vector2D& m
     if (!pMonitor)
         return false;
 
-    switch (edge) {
-        case eScreenEdge::TOP:
-            handleTopEdgeAction(window);
-            return true;
-        case eScreenEdge::BOTTOM:
-            handleBottomEdgeAction(window);
-            return true;
-        case eScreenEdge::LEFT:
-        case eScreenEdge::RIGHT:
-        case eScreenEdge::TOP_LEFT:
-        case eScreenEdge::TOP_RIGHT:
-        case eScreenEdge::BOTTOM_LEFT:
-        case eScreenEdge::BOTTOM_RIGHT: {
-            const CBox targetBox = getTargetBoxForEdge(edge, pMonitor);
-            handleSnapBoxAction(window, pMonitor, targetBox);
-            return true;
-        }
-        default:
-            return false;
-    }
+    const std::string action    = getActionForEdge(edge);
+    const CBox        targetBox = getTargetBoxForAction(action, edge, pMonitor);
+
+    return executeAction(action, window, pMonitor, targetBox);
 }
