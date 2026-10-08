@@ -1,0 +1,10 @@
+*.so
+*.o
+*.a
+build/
+.cache/
+compile_commands.json
+
+# Development clones
+Hyprland/
+hyprland-plugins/

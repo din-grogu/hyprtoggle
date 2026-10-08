@@ -1,0 +1,12 @@
+[repository]
+name = "hyprtoggle"
+authors = ["Ian Dieb"]
+
+[hyprtoggle]
+description = "Hyprland plugin to make windows fullscreen or floating by dragging to screen edges"
+authors = ["Ian Dieb"]
+version = "0.1"
+output = "hyprtoggle.so"
+build = [
+    "make all",
+]
