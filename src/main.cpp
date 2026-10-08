@@ -124,8 +124,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         if (!isPluginEnabled())
             return;
 
-        auto mode = g_layoutManager->dragController()->mode();
-        if (mode == MBIND_MOVE) {
+        auto mode   = g_layoutManager->dragController()->mode();
+        auto target = g_layoutManager->dragController()->target();
+
+        if (mode == MBIND_MOVE || target) {
             const double edgeThresh   = g_config.threshold ? sc<double>(g_config.threshold->value()) : 20.0;
             const double cornerThresh = g_config.corner_threshold ? sc<double>(g_config.corner_threshold->value()) : 60.0;
 

@@ -4,6 +4,8 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/event/EventBus.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/render/pass/RectPassElement.hpp>
+#include <hyprland/src/render/pass/BorderPassElement.hpp>
 
 using namespace Render::GL;
 
@@ -81,26 +83,28 @@ void renderPreview(PHLMONITOR pMonitor) {
     if (box.width < 1 || box.height < 1)
         return;
 
-    // Cor do fundo translúcido suave (azul acento moderno)
-    const CHyprColor fillColor{0.15f, 0.45f, 0.90f, 0.25f};
-    const CHyprColor borderColor{0.30f, 0.65f, 1.00f, 0.85f};
+    // Fundo translúcido com destaque moderno
+    const CHyprColor fillColor{0.15f, 0.45f, 0.90f, 0.35f};
+    const CHyprColor borderColor{0.30f, 0.65f, 1.00f, 0.90f};
 
     const int round = g_config.preview_rounding ? g_config.preview_rounding->value() : 10;
-    const int borderSize = g_config.preview_border_size ? g_config.preview_border_size->value() : 2;
+    const int borderSize = g_config.preview_border_size ? g_config.preview_border_size->value() : 3;
 
-    CRegion previewDamage{box};
-
-    CHyprOpenGLImpl::SRectRenderData rectData;
+    // 1. Injeta como PassElement nativo do Hyprland
+    CRectPassElement::SRectData rectData;
+    rectData.box           = box;
+    rectData.color         = fillColor;
     rectData.round         = round * pMonitor->m_scale;
     rectData.roundingPower = 2.0f;
-    rectData.damage        = &previewDamage;
 
-    g_pHyprOpenGL->renderRect(box, fillColor, rectData);
+    g_pHyprRenderer->addPassElement(makeUnique<CRectPassElement>(rectData));
 
-    CHyprOpenGLImpl::SBorderRenderData borderData;
+    CBorderPassElement::SBorderData borderData;
+    borderData.box           = box;
+    borderData.grad1         = Config::CGradientValueData{borderColor};
     borderData.round         = round * pMonitor->m_scale;
-    borderData.borderSize    = borderSize;
+    borderData.borderSize    = borderSize * pMonitor->m_scale;
     borderData.roundingPower = 2.0f;
 
-    g_pHyprOpenGL->renderBorder(box, Config::CGradientValueData{borderColor}, borderData);
+    g_pHyprRenderer->addPassElement(makeUnique<CBorderPassElement>(borderData));
 }
