@@ -18,9 +18,10 @@ void initPreviewOverlay() {
         s_hasRenderedThisFrame = false;
     });
 
-    static auto P_STAGE = Event::bus()->m_events.render.stage.listen([](eRenderStage stage) {
-        if (!s_hasRenderedThisFrame && (stage == eRenderStage::RENDER_POST_WINDOWS || stage == eRenderStage::RENDER_LAST_MOMENT) && s_currentRenderMonitor) {
-            renderPreview(s_currentRenderMonitor);
+    static auto P_STAGE = Event::bus()->m_events.render.stage.listen([](const Event::SRenderStageEvent& e) {
+        if (!s_hasRenderedThisFrame && (e.stage == eRenderStage::RENDER_POST_WINDOWS || e.stage == eRenderStage::RENDER_LAST_MOMENT) && e.monitor && e.context) {
+            s_currentRenderMonitor = e.monitor;
+            renderPreview(e.monitor, e.context->get());
             s_hasRenderedThisFrame = true;
         }
     });
@@ -69,7 +70,7 @@ void clearPreview() {
     }
 }
 
-void renderPreview(PHLMONITOR pMonitor) {
+void renderPreview(PHLMONITOR pMonitor, Render::CRenderContext& ctx) {
     if (!g_previewState.active || !g_previewState.monitor || g_previewState.monitor != pMonitor)
         return;
 
@@ -97,7 +98,7 @@ void renderPreview(PHLMONITOR pMonitor) {
     rectData.round         = round * pMonitor->m_scale;
     rectData.roundingPower = 2.0f;
 
-    g_pHyprRenderer->addPassElement(makeUnique<CRectPassElement>(rectData));
+    g_pHyprRenderer->addPassElement(ctx, makeUnique<CRectPassElement>(rectData));
 
     CBorderPassElement::SBorderData borderData;
     borderData.box           = box;
@@ -106,5 +107,5 @@ void renderPreview(PHLMONITOR pMonitor) {
     borderData.borderSize    = borderSize * pMonitor->m_scale;
     borderData.roundingPower = 2.0f;
 
-    g_pHyprRenderer->addPassElement(makeUnique<CBorderPassElement>(borderData));
+    g_pHyprRenderer->addPassElement(ctx, makeUnique<CBorderPassElement>(borderData));
 }

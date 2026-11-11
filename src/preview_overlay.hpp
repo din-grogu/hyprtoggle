@@ -16,4 +16,4 @@ inline SPreviewState g_previewState;
 void initPreviewOverlay();
 void updatePreview(eScreenEdge edge, const CBox& targetBox, PHLMONITOR pMonitor);
 void clearPreview();
-void renderPreview(PHLMONITOR pMonitor);
+void renderPreview(PHLMONITOR pMonitor, Render::CRenderContext& ctx);
